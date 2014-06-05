@@ -229,8 +229,10 @@ sub tsh_tempdir {
 
 sub print_plan {
     return unless $ENV{HARNESS_ACTIVE};
-    local $_ = shift;
-    say "1..$_";
+    my ($max, $directive) = @_;
+    my $plan = "1..$max";
+    $plan .= $directive if $directive;
+    say $plan;
 }
 
 sub rc_lines {
@@ -393,9 +395,9 @@ sub parse {
 
         test_tick();
 
-    } elsif ( $cmd =~ /^plan ?(\d+)$/ ) {
+    } elsif ( $cmd =~ /^plan ?(\d+)( # \S+(?:\s+.*)?)?$/ ) {
 
-        print_plan($1);
+        print_plan($1, $2);
 
     } elsif ( $cmd =~ /^cd ?(\S*)$/ ) {
 
@@ -419,13 +421,13 @@ sub parse {
             print $text if defined $text;
         }
 
-    } elsif ( $cmd =~ m(^ok(?:\s+or\s+(.*))?$) ) {
+    } elsif ( $cmd =~ m(^ok(?:\s+or\s+([^#]*))?( # \S+(?:\s+.*)?)?$) ) {
 
-        $rc ? fail( "ok, rc=$rc from $lec", $1 || '' ) : ok();
+        $rc ? fail( "ok, rc=$rc from $lec", $1 || '', $2 ) : ok($2);
 
-    } elsif ( $cmd =~ m(^!ok(?:\s+or\s+(.*))?$) ) {
+    } elsif ( $cmd =~ m(^!ok(?:\s+or\s+([^#]*))?( # \S+(?:\s+.*)?)?$) ) {
 
-        $rc ? ok() : fail( "!ok, rc=0 from $lec", $1 || '' );
+        $rc ? ok($2) : fail( "!ok, rc=0 from $lec", $1 || '', $2 );
 
     } elsif ( $cmd =~ m(^/(.*?)/(?:\s+or\s+(.*))?$) ) {
 
@@ -455,16 +457,27 @@ sub executable {
 }
 
 sub ok {
+    my $directive = shift;
     $testnum++;
-    say "ok ($testnum)" if $ENV{HARNESS_ACTIVE};
+
+    if($ENV{HARNESS_ACTIVE}) {
+        my $ok = "ok ($testnum)";
+        $ok .= $directive if $directive;
+        say $ok;
+    }
 }
 
 sub fail {
+    my ($msg1, $msg2, $directive) = @_;
     $testnum++;
-    say "not ok ($testnum)" if $ENV{HARNESS_ACTIVE};
+
+    if($ENV{HARNESS_ACTIVE}) {
+        my $not_ok = "not ok ($testnum)";
+        $not_ok .= $directive if $directive;
+        say $not_ok;
+    }
 
     my $die = 0;
-    my ( $msg1, $msg2 ) = @_;
     if ($msg2) {
         # if arg2 is non-empty, print it regardless of debug level
         $die = 1 if $msg2 =~ s/^die //;
