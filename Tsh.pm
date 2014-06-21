@@ -421,13 +421,13 @@ sub parse {
             print $text if defined $text;
         }
 
-    } elsif ( $cmd =~ m(^ok(?:\s+or\s+([^#]*))?( # \S+(?:\s+.*)?)?$) ) {
+    } elsif ( $cmd =~ m(^ok(?:\s+or\s+([^#-]*))?\s*(-(?:\s+[^#\d][^#]*))?(# \S+(?:\s+.*)?)?$) ) {
 
-        $rc ? fail( "ok, rc=$rc from $lec", $1 || '', $2 ) : ok($2);
+        $rc ? fail( "ok, rc=$rc from $lec", $1 || '', $2, $3 ) : ok($2, $3);
 
-    } elsif ( $cmd =~ m(^!ok(?:\s+or\s+([^#]*))?( # \S+(?:\s+.*)?)?$) ) {
+    } elsif ( $cmd =~ m(^!ok(?:\s+or\s+([^#-]*))?\s*(-(?:\s+[^#\d][^#]*))?(# \S+(?:\s+.*)?)?$) ) {
 
-        $rc ? ok($2) : fail( "!ok, rc=0 from $lec", $1 || '', $2 );
+        $rc ? ok($2, $3) : fail( "!ok, rc=0 from $lec", $1 || '', $2, $3 );
 
     } elsif ( $cmd =~ m(^/(.*?)/(?:\s+or\s+(.*))?$) ) {
 
@@ -457,23 +457,25 @@ sub executable {
 }
 
 sub ok {
-    my $directive = shift;
+    my ($description, $directive) = @_;
     $testnum++;
 
     if($ENV{HARNESS_ACTIVE}) {
         my $ok = "ok ($testnum)";
-        $ok .= $directive if $directive;
+        $ok .= ' ' . $description if $description;
+        $ok .= ' ' . $directive if $directive;
         say $ok;
     }
 }
 
 sub fail {
-    my ($msg1, $msg2, $directive) = @_;
+    my ($msg1, $msg2, $description, $directive) = @_;
     $testnum++;
 
     if($ENV{HARNESS_ACTIVE}) {
         my $not_ok = "not ok ($testnum)";
-        $not_ok .= $directive if $directive;
+        $not_ok .= ' ' . $description if $description;
+        $not_ok .= ' ' . $directive if $directive;
         say $not_ok;
     }
 
